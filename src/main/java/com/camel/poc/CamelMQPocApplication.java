@@ -4,10 +4,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class PocWriteApplication {
+public class CamelMQPocApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(PocWriteApplication.class, args);
+		SpringApplication.run(CamelMQPocApplication.class, args);
 	}
 
 }

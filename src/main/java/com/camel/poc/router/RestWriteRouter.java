@@ -1,20 +1,15 @@
-package com.camel.poc.readrouter;
+package com.camel.poc.router;
 
-import javax.jms.JMSException;
-
-import org.apache.activemq.command.ActiveMQTextMessage;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.Processor;
-import org.apache.camel.StreamCache;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.model.rest.RestBindingMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.json.GsonJsonParser;
 import org.springframework.http.MediaType;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Component;
@@ -25,7 +20,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Component
-public class WriteRouter extends RouteBuilder {
+public class RestWriteRouter extends RouteBuilder {
 
 	@Autowired
 	private ReadSourceBean readSourceBean;
@@ -38,18 +33,15 @@ public class WriteRouter extends RouteBuilder {
 
 	@Override
 	public void configure() throws Exception {
-//		camelServletRoute();
 		CamelContext context = new DefaultCamelContext();
 		context.setStreamCaching(true);
 		camelRestSendRoute();
-//		counterPushActiveMq();
 	}
 
 	
 	void camelRestSendRoute() {
 		from("direct:TransForm").process(this::process);
-		from("direct:retriveUser").process(this::processRead);
-		
+
 		restConfiguration().component("servlet").bindingMode(RestBindingMode.auto);
 		
 		rest()
@@ -57,11 +49,6 @@ public class WriteRouter extends RouteBuilder {
 		.produces(MediaType.TEXT_PLAIN_VALUE)
 		.post("/registerUser")
 		.to("direct:TransForm");
-		
-		rest()
-		.produces(MediaType.TEXT_PLAIN_VALUE)
-		.get("/showUser")
-		.to("direct:retriveUser");
 	}
 	
 	void process(Exchange exchange) throws JsonMappingException, JsonProcessingException {
@@ -72,15 +59,6 @@ public class WriteRouter extends RouteBuilder {
 		jmsTemplate.convertAndSend("camel-active-mq", alteredMsg);
 		msg.setBody(alteredMsg);
 		exchange.setMessage(msg);
-	}
-	
-	void processRead(Exchange exchange) throws JsonMappingException, JsonProcessingException, JMSException {
-		ActiveMQTextMessage msg = (ActiveMQTextMessage)jmsTemplate. receive("camel-active-mq");
-		System.out.println(msg.getText());
-		Message restMsg = exchange.getMessage();
-		restMsg.setBody(msg.getText());
-		exchange.setMessage(restMsg);
-		
 	}
 	
 	void counterDisplay(){
@@ -108,7 +86,10 @@ public class WriteRouter extends RouteBuilder {
 		});
 	}
 	
-
+	public void activeMQRouter() throws Exception {
+		 from("activemq:camel-active-mq") 
+		 .to("log:read from camel-active-mq");
+	}
 	
 
 }
